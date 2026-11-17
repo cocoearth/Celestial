@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>지평 좌표계와 적도 좌표계 · 개념 설명 화면</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #ffffff; overflow: hidden; }
+  body { font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif; color: #111; }
+  #stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; background: #fff; }
+  #steps { position: absolute; right: 60px; top: 44px; display: flex; gap: 12px; }
+  #steps button { font: inherit; font-size: 26px; font-weight: 700; padding: 10px 22px; border-radius: 30px; border: 3px solid #c9c9c9; background: #fff; color: #777; cursor: pointer; }
+  #steps button.on { border-color: #0066cc; background: #0066cc; color: #fff; }
+  #steps button.done { border-color: #0066cc; color: #0066cc; }
+  .fig { position: absolute; left: 60px; top: 140px; width: 1800px; height: 660px; }
+  .fig svg { width: 100%; height: 100%; display: block; }
+  .ctrl { position: absolute; left: 0; right: 0; top: 812px; height: 72px; display: none; justify-content: center; align-items: center; gap: 22px; font-size: 30px; }
+  .ctrl.on { display: flex; }
+  .ctrl button { font: inherit; font-size: 28px; font-weight: 700; padding: 10px 26px; border: 3px solid #0066cc; background: #fff; color: #0066cc; border-radius: 12px; cursor: pointer; }
+  .ctrl button:hover { background: #eaf3fc; }
+  .ctrl button.sel { background: #0066cc; color: #fff; }
+  .ctrl button:disabled { opacity: 0.4; cursor: default; }
+  .ctrl input[type=range] { width: 520px; accent-color: #0066cc; height: 30px; }
+  .ctrl .val { min-width: 120px; font-weight: 800; color: #0066cc; font-variant-numeric: tabular-nums; }
+  .ctrl .sep { width: 2px; height: 44px; background: #ccc; }
+  .ctrl label { font-weight: 700; }
+  .cap { position: absolute; left: 60px; right: 470px; top: 898px; margin: 0; font-size: 40px; line-height: 1.38; font-weight: 600; text-align: center; }
+  .cap.small { font-size: 33px; }
+  .cap b { color: #0066cc; }
+  #counter { position: absolute; left: 60px; bottom: 18px; font-size: 26px; color: #666; font-variant-numeric: tabular-nums; }
+  #scenes { position: absolute; left: 60px; top: 44px; display: flex; gap: 12px; }
+  #scenes button { font: inherit; font-size: 28px; font-weight: 800; padding: 10px 24px; border-radius: 12px; border: 3px solid #111; background: #fff; color: #111; cursor: pointer; }
+  #scenes button.on { background: #111; color: #fff; }
+  #nav { position: absolute; right: 30px; top: 900px; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+  #nav .row { display: flex; gap: 12px; }
+  #nav button { font: inherit; font-weight: 800; line-height: 1; border-radius: 14px; cursor: pointer; touch-action: manipulation; }
+  #nav .stp { font-size: 36px; width: 120px; height: 66px; border: 4px solid #0066cc; background: #0066cc; color: #fff; }
+  #nav .stp.back { background: #fff; color: #0066cc; }
+  #nav .scn { font-size: 26px; width: 190px; height: 58px; border: 3px solid #111; background: #fff; color: #111; }
+  #nav button:disabled { opacity: 0.25; cursor: default; }
+  #nav button:active:not(:disabled) { transform: scale(0.97); }
+  .note { font-size: 24px; fill: #555; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="scenes" style="display:none"></div>
+  <div id="steps" style="display:none"></div>
+  <div class="fig"><svg id="fig" viewBox="0 0 1800 660"></svg></div>
+
+  <!-- ===== 장면 1 조작 ===== -->
+  <div class="ctrl" id="ctrl-0-0">
+    <span>바라보는 쪽:</span>
+    <button data-f="0">북쪽</button>
+    <button data-f="90">동쪽</button>
+    <button data-f="180">남쪽</button>
+    <button data-f="270">서쪽</button>
+  </div>
+  <div class="ctrl" id="ctrl-0-1">
+    <button id="next01">다음 방위 ▶</button>
+    <button id="reset01">처음부터</button>
+  </div>
+  <div class="ctrl" id="ctrl-0-2">
+    <button class="play" data-k="p02">▶ 재생</button>
+    <input type="range" id="t02" min="0" max="24" step="0.25" value="12">
+    <span class="val" id="t02v">12:00</span>
+    <span class="sep"></span>
+    <button data-t="6">06시</button>
+    <button data-t="12">12시</button>
+    <button data-t="18">18시</button>
+    <button data-t="24">24시</button>
+  </div>
+  <div class="ctrl" id="ctrl-0-3">
+    <button class="play" data-k="p03">▶ 재생</button>
+    <button id="day03">하루 넘기기 ▶</button>
+    <button id="reset03">처음으로</button>
+    <span class="val" id="t03v">1일째 12:00</span>
+  </div>
+
+  <!-- ===== 장면 2 조작 ===== -->
+  <div class="ctrl" id="ctrl-1-0">
+    <button id="next10">다음 ▶</button>
+    <button id="reset10">처음부터</button>
+  </div>
+  <div class="ctrl" id="ctrl-1-1">
+    <button class="play" data-k="p11">▶ 재생</button>
+    <span class="sep"></span>
+    <button data-m="0">북극 위에서 내려다보기</button>
+    <button data-m="1">지구와 함께 돌며 보기</button>
+  </div>
+  <div class="ctrl" id="ctrl-1-2">
+    <button class="play" data-k="p12">▶ 재생</button>
+    <button id="trail12">자취 끄기</button>
+  </div>
+  <div class="ctrl" id="ctrl-1-3">
+    <button class="play" data-k="p13">▶ 재생</button>
+    <button id="reset13">처음으로</button>
+    <span class="sep"></span>
+    <button data-v="90">동쪽 하늘</button>
+    <button data-v="180">남쪽 하늘</button>
+    <button data-v="270">서쪽 하늘</button>
+    <button data-v="0">북쪽 하늘</button>
+  </div>
+  <div class="ctrl" id="ctrl-1-4">
+    <label>방위각</label>
+    <input type="range" id="az13" min="0" max="360" step="1" value="210" style="width:400px">
+    <span class="val" id="az13v">210°</span>
+    <span class="sep"></span>
+    <label>고도</label>
+    <input type="range" id="alt13" min="0" max="90" step="1" value="40" style="width:300px">
+    <span class="val" id="alt13v">40°</span>
+  </div>
+
+  <p class="cap" id="cap"></p>
+  <div id="counter"></div>
+  <div id="nav">
+    <div class="row">
+      <button class="stp back" id="stepPrev" title="이전 단계">◀</button>
+      <button class="stp" id="stepNext" title="다음 단계">▶</button>
+    </div>
+    <div class="row">
+      <button class="scn" id="scenePrev">◀ 이전 장면</button>
+      <button class="scn" id="sceneNext">다음 장면 ▶</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------- 무대 크기 맞추기 ---------- */
+const stage = document.getElementById('stage');
+function fit() {
+  const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+  stage.style.transform = `scale(${s})`;
+  stage.style.left = ((window.innerWidth - 1920 * s) / 2) + 'px';
+  stage.style.top = ((window.innerHeight - 1080 * s) / 2) + 'px';
+}
+window.addEventListener('resize', fit); fit();
+
+/* ---------- 공통 도구 ---------- */
+const D2R = Math.PI / 180;
+// 화면에서 반시계 방향으로 잰 각 a(°)의 점. (0° = 오른쪽, 90° = 위)
+function P(cx, cy, r, a) { return [cx + r * Math.cos(a * D2R), cy - r * Math.sin(a * D2R)]; }
+const r1 = n => (+n).toFixed(1);
+function hhmm(t) {
+  if (Math.abs(t - 24) < 1e-6) return '24:00';
+  let m = Math.round(t * 60) % (24 * 60); if (m < 0) m += 24 * 60;
+  return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+}
+function defs(id) {
+  return `<defs>
+    <marker id="ar${id}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#111"/></marker>
+    <marker id="ab${id}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0066cc"/></marker>
+    <marker id="aw${id}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker>
+  </defs>`;
+}
+function sunSVG(x, y, r) {
+  let g = '';
+  for (let i = 0; i < 12; i++) {
+    const a = i * 30, [x1, y1] = P(x, y, r * 1.22, a), [x2, y2] = P(x, y, r * 1.5, a);
+    g += `<line x1="${r1(x1)}" y1="${r1(y1)}" x2="${r1(x2)}" y2="${r1(y2)}" stroke="#111" stroke-width="3" stroke-linecap="round"/>`;
+  }
+  g += `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r}" fill="#ffe9a8" stroke="#111" stroke-width="3"/>`;
+  return g;
+}
+function starShape(x, y, r, op = 1, fill = '#ffe9a8') {
+  let d = '';
+  for (let i = 0; i < 10; i++) {
+    const rr = i % 2 ? r * 0.45 : r, [px, py] = P(x, y, rr, 90 + i * 36);
+    d += (i ? 'L' : 'M') + r1(px) + ',' + r1(py);
+  }
+  return `<path d="${d}Z" fill="${fill}" stroke="#111" stroke-width="2" stroke-linejoin="round" opacity="${op}"/>`;
+}
+function headAt(p0, p1, size, color) {
+  const dx = p1.x - p0.x, dy = p1.y - p0.y, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
+  const bx = p1.x - ux * size, by = p1.y - uy * size, px = -uy * size * 0.55, py = ux * size * 0.55;
+  return `<path d="M${r1(p1.x)},${r1(p1.y)} L${r1(bx + px)},${r1(by + py)} L${r1(bx - px)},${r1(by - py)} Z" fill="${color}"/>`;
+}
+
+/* 위에서 내려다본 사람 (기본은 화면 위쪽을 바라봄). 오른손 = 파랑 */
+function personTop(x, y, sc, rot) {
+  const w = 5;
+  return `<g transform="translate(${r1(x)} ${r1(y)}) rotate(${r1(rot)}) scale(${sc})">
+    <rect x="-142" y="-14" width="98" height="28" rx="14" fill="#fff" stroke="#111" stroke-width="${w}"/>
+    <rect x="44" y="-14" width="98" height="28" rx="14" fill="#fff" stroke="#111" stroke-width="${w}"/>
+    <circle cx="-152" cy="0" r="23" fill="#fff" stroke="#111" stroke-width="${w}"/>
+    <circle cx="152" cy="0" r="23" fill="#0066cc" stroke="#111" stroke-width="${w}"/>
+    <ellipse cx="0" cy="6" rx="68" ry="30" fill="#fff" stroke="#111" stroke-width="${w}"/>
+    <circle cx="0" cy="0" r="40" fill="#fff"/>
+    <path d="M-40,-2 A40,40 0 0 0 40,-2 Z" fill="#3a3a3a"/>
+    <circle cx="0" cy="0" r="40" fill="none" stroke="#111" stroke-width="${w}"/>
+    <circle cx="-15" cy="-19" r="6.5" fill="#111"/>
+    <circle cx="15" cy="-19" r="6.5" fill="#111"/>
+    <path d="M-8,-37 L0,-52 L8,-37 Z" fill="#111"/>
+  </g>`;
+}
+/* 옆에서 본 사람 (왼쪽을 바라봄). 발끝이 (x, y), 키 h */
+function personSide(x, y, h) {
+  const s = h / 200, w = 5 / s * 0.9;
+  return `<g transform="translate(${r1(x)} ${r1(y)}) scale(${s})">
+    <rect x="-17" y="-82" width="15" height="82" rx="7" fill="#fff" stroke="#111" stroke-width="${w}"/>
+    <rect x="2" y="-82" width="15" height="82" rx="7" fill="#fff" stroke="#111" stroke-width="${w}"/>
+    <rect x="-28" y="-152" width="56" height="78" rx="16" fill="#fff" stroke="#111" stroke-width="${w}"/>
+    <rect x="-9" y="-146" width="18" height="66" rx="9" fill="#fff" stroke="#111" stroke-width="${w}"/>
+    <circle cx="0" cy="-178" r="26" fill="#fff"/>
+    <path d="M2,-204 A26,26 0 0 1 2,-152 Z" fill="#3a3a3a"/>
+    <circle cx="0" cy="-178" r="26" fill="none" stroke="#111" stroke-width="${w}"/>
+    <circle cx="-14" cy="-182" r="4.5" fill="#111"/>
+    <path d="M-25,-176 L-33,-170 L-24,-167 Z" fill="#111"/>
+  </g>`;
+}
+
+/* ---------- 3차원 투영 (천구용) ----------
+   방향 벡터 (n 북, e 동, u 위). 북 = 오른쪽 뒤, 동 = 오른쪽 앞, 남 = 왼쪽 앞, 서 = 왼쪽 뒤가 되도록 비스듬히 봄.
+   d > 0 이면 앞쪽(보이는 면), d < 0 이면 뒤쪽.                                         */
+function mkProj(cx, cy, R, psi, eps) {
+  const cp = Math.cos(psi * D2R), sp = Math.sin(psi * D2R), ce = Math.cos(eps * D2R), se = Math.sin(eps * D2R);
+  return (n, e, u) => {
+    const X = n, Y = u, Z = e;
+    const X2 = X * cp + Z * sp, Z2 = -X * sp + Z * cp;
+    return { x: cx + R * X2, y: cy - R * (Y * ce - Z2 * se), d: Z2 * ce + Y * se };
+  };
+}
+// 앞쪽은 fs, 뒤쪽은 bs 스타일로 이어 그림 (bs가 null이면 뒤쪽 숨김)
+function curve(pts, fs, bs) {
+  let out = '', seg = [], cur = null;
+  const flush = () => {
+    if (seg.length > 1) { const s = cur ? fs : bs; if (s) out += `<path d="M${seg.map(p => r1(p.x) + ',' + r1(p.y)).join(' L')}" fill="none" ${s}/>`; }
+  };
+  for (const p of pts) {
+    const f = p.d >= -1e-9;
+    if (cur === null) cur = f;
+    if (f !== cur) { seg.push(p); flush(); seg = [p]; cur = f; } else seg.push(p);
+  }
+  flush();
+  return out;
+}
+const hor = (A, h) => ({ n: Math.cos(h * D2R) * Math.cos(A * D2R), e: Math.cos(h * D2R) * Math.sin(A * D2R), u: Math.sin(h * D2R) });
+const pv = (pr, v, k = 1) => pr(v.n * k, v.e * k, v.u * k);
+// 적위 δ, 시간각 H(서쪽으로 +), 위도 φ → 지평 방향 벡터
+function eqToHor(dec, H, lat) {
+  const d = dec * D2R, h = H * D2R, f = lat * D2R;
+  return {
+    u: Math.sin(f) * Math.sin(d) + Math.cos(f) * Math.cos(d) * Math.cos(h),
+    n: Math.cos(f) * Math.sin(d) - Math.sin(f) * Math.cos(d) * Math.cos(h),
+    e: -Math.cos(d) * Math.sin(h)
+  };
+}
+const LAT = 37.5;
+const CAM_PSI = 42, CAM_EPS = 24;   // 천구를 보는 방향
+
+/* 천구 바탕: 구, 지평면, 방위 글자 */
+function horizonPts(pr, k = 1) { const a = []; for (let A = 0; A <= 360; A += 4) a.push(pv(pr, hor(A, 0), k)); return a; }
+function skyBack(pr, cx, cy, R) {
+  let g = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="#f5f8fc"/>`;
+  return g;
+}
+function horizonFill(pr) {
+  const pts = horizonPts(pr);
+  return `<path d="M${pts.map(p => r1(p.x) + ',' + r1(p.y)).join(' L')}Z" fill="rgba(110,130,110,0.16)"/>` +
+    curve(pts, 'stroke="#111" stroke-width="3.5"', 'stroke="#111" stroke-width="2.5" stroke-dasharray="9 8"');
+}
+function dirLabels(pr, k = 1.13, fs = 40) {
+  let g = '';
+  for (const [A, t] of [[0, '북'], [90, '동'], [180, '남'], [270, '서']]) {
+    const p = pv(pr, hor(A, 0), k), q = pv(pr, hor(A, 0), 1);
+    g += `<circle cx="${r1(q.x)}" cy="${r1(q.y)}" r="6" fill="#111"/>`;
+    g += `<text x="${r1(p.x)}" y="${r1(p.y + fs * 0.36)}" text-anchor="middle" font-size="${fs}" font-weight="800" fill="#111" stroke="#fff" stroke-width="7" paint-order="stroke">${t}</text>`;
+  }
+  return g;
+}
+function sphereOutline(cx, cy, R) { return `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#111" stroke-width="3.5"/>`; }
+
+/* ================================================================
+   장면 1 · 방위와 하루
+   ================================================================ */
+/*
+  북극 위에서 내려다본 지구.  s: 지구에서 본 태양 방향,  t: 관측자 시각
+  관측자 위치각 φ = s + (t − 12)×15° (반시계 자전).  관측자는 남쪽(바깥쪽)을 바라봄.
+*/
+function earthSVG(id, cx, cy, R, s, t, o) {
+  const ck = o.ck, ps = o.ps, reveal = o.reveal ?? 3;
+  const phi = s + (t - 12) * 15;
+  const sw = Math.max(2, 3 * R / 150);
+  let g = '';
+  g += `<circle cx="${r1(cx)}" cy="${r1(cy)}" r="${R}" fill="#dbe9f7"/>`;
+  for (let i = 0; i < 12; i++) {
+    const [x, y] = P(cx, cy, R, phi + i * 30);
+    g += `<line x1="${r1(cx)}" y1="${r1(cy)}" x2="${r1(x)}" y2="${r1(y)}" stroke="#9db6cf" stroke-width="${sw * 0.5}"/>`;
+  }
+  const [x1, y1] = P(cx, cy, R, s + 90), [x2, y2] = P(cx, cy, R, s + 180), [x3, y3] = P(cx, cy, R, s + 270);
+  g += `<path d="M${r1(cx)},${r1(cy)} L${r1(x1)},${r1(y1)} A${R},${R} 0 0 0 ${r1(x2)},${r1(y2)} A${R},${R} 0 0 0 ${r1(x3)},${r1(y3)} Z" fill="rgba(22,28,40,0.58)"/>`;
+  g += `<circle cx="${r1(cx)}" cy="${r1(cy)}" r="${R}" fill="none" stroke="#111" stroke-width="${sw}"/>`;
+  const rr = R * 0.2, [ax1, ay1] = P(cx, cy, rr, 200), [ax2, ay2] = P(cx, cy, rr, 340);
+  g += `<path d="M${r1(ax1)},${r1(ay1)} A${rr},${rr} 0 1 0 ${r1(ax2)},${r1(ay2)}" fill="none" stroke="#555" stroke-width="${sw}" marker-end="url(#aw${id})"/>`;
+  g += `<circle cx="${r1(cx)}" cy="${r1(cy)}" r="${Math.max(4, R * 0.035)}" fill="#111"/>`;
+  if (o.poleLabel) {
+    const [plx, ply] = P(cx, cy, R * 0.24, 35), [rlx, rly] = P(cx, cy, R * 0.36, 300);
+    g += `<text x="${r1(plx)}" y="${r1(ply)}" font-size="${24 * ck}" font-weight="700" fill="#fff" stroke="#111" stroke-width="5" paint-order="stroke">북극</text>`;
+    g += `<text x="${r1(rlx)}" y="${r1(rly + 10 * ck)}" font-size="${20 * ck}" font-weight="700" fill="#fff" stroke="#111" stroke-width="5" paint-order="stroke">자전</text>`;
+  }
+  const rObs = R * (o.orbitFrac ?? 0.82);
+  const [ox, oy] = P(cx, cy, rObs, phi);
+  const st0 = 178 * ps + 4, L = 52 * ck, fs = 30 * ck;
+  const LN = Math.max(18, Math.min(L, rObs - st0 - R * 0.3 - 30 * ck));
+  const dirs = [['북', phi + 180, 1], ['남', phi, 2], ['동', phi + 90, 3], ['서', phi - 90, 3]];
+  for (const [name, a, need] of dirs) {
+    if (reveal < need) continue;
+    const len = name === '북' ? LN : L;
+    const [sx, sy] = P(ox, oy, st0, a), [ex, ey] = P(ox, oy, st0 + len, a), [lx, ly] = P(ox, oy, st0 + len + 22 * ck, a);
+    g += `<line x1="${r1(sx)}" y1="${r1(sy)}" x2="${r1(ex)}" y2="${r1(ey)}" stroke="#111" stroke-width="${3.5 * ck}" marker-end="url(#ar${id})"/>`;
+    g += `<text x="${r1(lx)}" y="${r1(ly + fs * 0.36)}" text-anchor="middle" font-size="${fs}" font-weight="800" fill="#111" stroke="#fff" stroke-width="${6 * ck}" paint-order="stroke">${name}</text>`;
+  }
+  g += personTop(ox, oy, ps, 90 - phi);
+  return g;
+}
+
+/* 관측자가 남쪽을 바라본 하늘 (춘분·추분 무렵, 단순화). 900×660 영역 */
+const STARS = (() => { let x = 12345; const rnd = () => (x = (x * 1103515245 + 12345) % 2147483648) / 2147483648; const a = [];
+  while (a.length < 45) { const sx = 20 + rnd() * 860, sy = 70 + rnd() * 380; if (sx > 230 && sx < 670 && sy > 360 && sy < 450) continue; if (sy < 200 && sx > 700) continue; a.push([sx, sy]); } return a; })();
+function skySVG(id, t) {
+  const H = (t - 12) * 15;
+  const sx = 450 + 360 * Math.sin(H * D2R), sy = 470 - 330 * Math.cos(H * D2R);
+  const c = Math.cos(H * D2R), night = c <= -0.1;
+  const sky = c > 0.05 ? '#e8f2fb' : (c > -0.1 ? '#c3ccd8' : '#1e2532');
+  let g = `<clipPath id="clip${id}"><rect x="0" y="0" width="900" height="470"/></clipPath>`;
+  g += `<rect x="0" y="0" width="900" height="470" fill="${sky}"/>`;
+  if (night) for (const [x, y] of STARS) g += `<circle cx="${r1(x)}" cy="${r1(y)}" r="2.2" fill="#fff"/>`;
+  let d = '';
+  for (let h = -90; h <= 90; h += 5) d += (h === -90 ? 'M' : 'L') + r1(450 + 360 * Math.sin(h * D2R)) + ',' + r1(470 - 330 * Math.cos(h * D2R));
+  g += `<path d="${d}" fill="none" stroke="${night ? '#6b7790' : '#7a8797'}" stroke-width="3" stroke-dasharray="10 10"/>`;
+  let d2 = '';
+  for (let h = -24; h <= 24; h += 4) d2 += (h === -24 ? 'M' : 'L') + r1(450 + 400 * Math.sin(h * D2R)) + ',' + r1(470 - 375 * Math.cos(h * D2R));
+  g += `<path d="${d2}" fill="none" stroke="#0066cc" stroke-width="5" marker-end="url(#ab${id})"/>`;
+  g += `<g clip-path="url(#clip${id})">${sunSVG(sx, sy, 32)}</g>`;
+  if (night) g += `<text x="450" y="420" text-anchor="middle" font-size="36" font-weight="700" fill="#fff">태양은 지평선 아래</text>`;
+  g += `<rect x="0" y="470" width="900" height="190" fill="#e9e9e9"/>`;
+  g += `<line x1="0" y1="470" x2="900" y2="470" stroke="#111" stroke-width="4"/>`;
+  for (const [x, a, b] of [[90, '동', '(왼손 쪽)'], [450, '남', '(앞)'], [810, '서', '(오른손 쪽)']]) {
+    g += `<text x="${x}" y="532" text-anchor="middle" font-size="48" font-weight="800">${a}</text>`;
+    g += `<text x="${x}" y="574" text-anchor="middle" font-size="26" fill="#444">${b}</text>`;
+  }
+  g += `<text x="20" y="44" font-size="30" font-weight="700" fill="${night ? '#fff' : '#111'}">관측자가 남쪽을 바라본 하늘</text>`;
+  g += `<text x="880" y="44" text-anchor="end" font-size="40" font-weight="800" fill="${night ? '#fff' : '#0066cc'}">${hhmm(t)}</text>`;
+  g += `<text x="450" y="645" text-anchor="middle" class="note">춘분·추분 무렵 기준 · 고도는 단순화함</text>`;
+  return g;
+}
+
+/* ----- 장면 1 · 단계 ① 방위 보기 ----- */
+const DIRNAME = ['북쪽', '동쪽', '남쪽', '서쪽'];
+const dirOf = a => DIRNAME[Math.round((((a % 360) + 360) % 360) / 90) % 4];
+let face = 0, turning = false;
+function personBack(cx, front, left, right, back) {
+  let g = '';
+  g += `<text x="${cx}" y="40" text-anchor="middle" font-size="30" font-weight="700">뒤에서 본 나</text>`;
+  g += `<text x="${cx}" y="104" text-anchor="middle" font-size="40" font-weight="800" fill="#0066cc">앞(바라보는 쪽) = ${front}</text>`;
+  g += `<rect x="${cx - 46}" y="420" width="40" height="130" rx="16" fill="#fff" stroke="#111" stroke-width="5"/>`;
+  g += `<rect x="${cx + 6}" y="420" width="40" height="130" rx="16" fill="#fff" stroke="#111" stroke-width="5"/>`;
+  g += `<rect x="${cx - 250}" y="282" width="200" height="34" rx="17" fill="#fff" stroke="#111" stroke-width="5"/>`;
+  g += `<rect x="${cx + 50}" y="282" width="200" height="34" rx="17" fill="#fff" stroke="#111" stroke-width="5"/>`;
+  g += `<circle cx="${cx - 270}" cy="299" r="28" fill="#fff" stroke="#111" stroke-width="5"/>`;
+  g += `<circle cx="${cx + 270}" cy="299" r="28" fill="#0066cc" stroke="#111" stroke-width="5"/>`;
+  g += `<rect x="${cx - 62}" y="262" width="124" height="176" rx="34" fill="#fff" stroke="#111" stroke-width="5"/>`;
+  g += `<circle cx="${cx - 52}" cy="200" r="12" fill="#fff" stroke="#111" stroke-width="5"/>`;
+  g += `<circle cx="${cx + 52}" cy="200" r="12" fill="#fff" stroke="#111" stroke-width="5"/>`;
+  g += `<circle cx="${cx}" cy="196" r="54" fill="#3a3a3a" stroke="#111" stroke-width="5"/>`;
+  g += `<text x="${cx - 270}" y="244" text-anchor="middle" font-size="56" font-weight="800">${left}</text>`;
+  g += `<text x="${cx + 270}" y="244" text-anchor="middle" font-size="56" font-weight="800" fill="#0066cc">${right}</text>`;
+  g += `<text x="${cx - 270}" y="372" text-anchor="middle" font-size="32" font-weight="700">왼손</text>`;
+  g += `<text x="${cx + 270}" y="372" text-anchor="middle" font-size="32" font-weight="700" fill="#0066cc">오른손</text>`;
+  g += `<text x="${cx}" y="610" text-anchor="middle" font-size="32" fill="#555">뒤 = ${back}</text>`;
+  return g;
+}
+function draw00() {
+  const cx = 480, cy = 330;
+  let g = defs('00');
+  g += `<circle cx="${cx}" cy="${cy}" r="250" fill="none" stroke="#c4c4c4" stroke-width="3"/>`;
+  for (const [n, dx, dy] of [['북', 0, -1], ['동', 1, 0], ['남', 0, 1], ['서', -1, 0]]) {
+    g += `<line x1="${cx + dx * 232}" y1="${cy + dy * 232}" x2="${cx + dx * 268}" y2="${cy + dy * 268}" stroke="#c4c4c4" stroke-width="4"/>`;
+    g += `<text x="${cx + dx * 312}" y="${cy + dy * 300 + 19}" text-anchor="middle" font-size="54" font-weight="800">${n}</text>`;
+  }
+  const f = face * D2R, fx = Math.sin(f), fy = -Math.cos(f);
+  g += `<line x1="${r1(cx + fx * 62)}" y1="${r1(cy + fy * 62)}" x2="${r1(cx + fx * 225)}" y2="${r1(cy + fy * 225)}" stroke="#0066cc" stroke-width="8" marker-end="url(#ab00)"/>`;
+  g += personTop(cx, cy, 1, face);
+  if (!turning) {
+    const rx = Math.cos(f), ry = Math.sin(f);
+    const lab = (hx, hy, dx, txt, col) => Math.abs(dx) > 0.7
+      ? `<text x="${r1(hx)}" y="${r1(hy - 44)}" text-anchor="middle" font-size="32" font-weight="800" fill="${col}" stroke="#fff" stroke-width="7" paint-order="stroke">${txt}</text>`
+      : `<text x="${r1(hx + 36)}" y="${r1(hy + 11)}" font-size="32" font-weight="800" fill="${col}" stroke="#fff" stroke-width="7" paint-order="stroke">${txt}</text>`;
+    g += lab(cx + rx * 152, cy + ry * 152, rx, `오른손 = ${dirOf(face + 90)}`, '#0066cc');
+    g += lab(cx - rx * 152, cy - ry * 152, rx, `왼손 = ${dirOf(face - 90)}`, '#111');
+  }
+  g += `<text x="20" y="40" font-size="30" font-weight="700">위에서 내려다본 나</text>`;
+  g += `<line x1="960" y1="40" x2="960" y2="620" stroke="#e2e2e2" stroke-width="3"/>`;
+  g += turning ? personBack(1390, '…', '', '', '…') : personBack(1390, dirOf(face), dirOf(face - 90), dirOf(face + 90), dirOf(face + 180));
+  const cap = `<b>${dirOf(face)}</b>을 바라보면<br>오른손 쪽이 <b>${dirOf(face + 90)}</b>, 왼손 쪽이 <b>${dirOf(face - 90)}</b>`;
+  document.querySelectorAll('#ctrl-0-0 button').forEach(b => b.classList.toggle('sel', !turning && dirOf(face) === dirOf(+b.dataset.f)));
+  return [g, cap];
+}
+function turnTo(target) {
+  if (turning) return;
+  let d = ((target - face) % 360 + 360) % 360; if (d > 180) d -= 360;
+  if (d === 0) return;
+  turning = true; const start = face, t0 = performance.now(), dur = 500 + Math.abs(d) * 4;
+  (function step(now) {
+    const k = Math.min(1, (now - t0) / dur), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+    face = start + d * e;
+    if (k >= 1) { face = ((target % 360) + 360) % 360; turning = false; }
+    render();
+    if (turning) requestAnimationFrame(step);
+  })(t0);
+}
+document.querySelectorAll('#ctrl-0-0 button').forEach(b => b.addEventListener('click', e => { e.currentTarget.blur(); turnTo(+b.dataset.f); }));
+
+/* ----- 장면 1 · 단계 ② 우주에서 본 방위 ----- */
+let reveal01 = 0;
+const CAP01 = [
+  '정오에 관측자가 <b>태양을 바라보고</b> 서 있다<br>이 사람에게 북·남·동·서는 어느 쪽일까?',
+  '<b>북쪽</b> = 자전축의 <b>북극</b> 쪽',
+  '<b>남쪽</b> = 북쪽의 반대<br>그래서 정오에 태양은 <b>남쪽</b>에 있다',
+  '태양(남쪽)을 바라보면<br>왼손 쪽이 <b>동쪽</b>, 오른손 쪽이 <b>서쪽</b>'
+];
+function draw01() {
+  let g = defs('01');
+  g += sunSVG(300, 330, 70);
+  g += `<text x="300" y="485" text-anchor="middle" font-size="36" font-weight="800">태양</text>`;
+  for (const dy of [-170, 170]) g += `<line x1="440" y1="${330 + dy}" x2="700" y2="${330 + dy}" stroke="#999" stroke-width="4" stroke-dasharray="14 10" marker-end="url(#aw01)"/>`;
+  g += `<text x="570" y="${330 - 186}" text-anchor="middle" font-size="26" fill="#555">햇빛</text>`;
+  g += earthSVG('01', 1120, 330, 245, 180, 12, { ck: 1.2, ps: 0.52, reveal: reveal01, poleLabel: true, orbitFrac: 0.86 });
+  g += `<text x="1120" y="44" text-anchor="middle" font-size="30" font-weight="700">북극 위에서 내려다본 지구 (정오)</text>`;
+  g += `<text x="1560" y="250" font-size="26" fill="#333">어두운 쪽 = 밤</text>`;
+  g += `<circle cx="1574" cy="296" r="13" fill="#0066cc" stroke="#111" stroke-width="3"/><text x="1598" y="306" font-size="26" fill="#333">오른손</text>`;
+  g += `<circle cx="1574" cy="342" r="13" fill="#fff" stroke="#111" stroke-width="3"/><text x="1598" y="352" font-size="26" fill="#333">왼손</text>`;
+  g += `<text x="1120" y="652" text-anchor="middle" class="note">크기·거리는 실제 비율과 다름 · 자전축 기울기는 생략</text>`;
+  document.getElementById('next01').disabled = reveal01 >= 3;
+  return [g, CAP01[reveal01]];
+}
+document.getElementById('next01').addEventListener('click', e => { e.currentTarget.blur(); if (reveal01 < 3) { reveal01++; render(); } });
+document.getElementById('reset01').addEventListener('click', e => { e.currentTarget.blur(); reveal01 = 0; render(); });
+
+/* ----- 장면 1 · 단계 ③ 자전 ----- */
+let t02 = 12;
+const near = (t, x) => { const d = Math.abs(((t - x) % 24 + 24) % 24); return Math.min(d, 24 - d) < 0.3; };
+function draw02() {
+  let g = defs('02a');
+  g += sunSVG(110, 330, 48);
+  g += `<text x="110" y="440" text-anchor="middle" font-size="30" font-weight="800">태양</text>`;
+  for (const dy of [-150, 150]) g += `<line x1="190" y1="${330 + dy}" x2="340" y2="${330 + dy}" stroke="#999" stroke-width="4" stroke-dasharray="12 9" marker-end="url(#aw02a)"/>`;
+  g += earthSVG('02a', 575, 330, 170, 180, t02, { ck: 1.0, ps: 0.3 });
+  g += `<text x="20" y="44" font-size="30" font-weight="700">북극 위에서 내려다본 지구</text>`;
+  g += `<text x="450" y="652" text-anchor="middle" class="note">크기·거리는 실제 비율과 다름 · 자전축 기울기는 생략</text>`;
+  g += `<g transform="translate(900 0)">${defs('02b')}${skySVG('02b', t02)}</g>`;
+  document.getElementById('t02').value = t02;
+  document.getElementById('t02v').textContent = hhmm(t02);
+  document.querySelectorAll('#ctrl-0-2 [data-t]').forEach(b => b.classList.toggle('sel', near(t02, +b.dataset.t)));
+  let cap;
+  if (near(t02, 12)) cap = '<b>정오</b>: 태양을 마주 보는 쪽이 남쪽<br>태양은 남쪽 하늘에서 가장 높다';
+  else if (near(t02, 18)) cap = '<b>오후 6시</b>: 자전하면서<br>태양이 <b>서쪽</b> 지평선으로 진다';
+  else if (near(t02, 0)) cap = '<b>자정</b>: 태양의 정반대 쪽을 바라본다<br>태양은 지평선 아래에 있다';
+  else if (near(t02, 6)) cap = '<b>오전 6시</b>: 다시 태양 쪽으로 돌아와<br>태양이 <b>동쪽</b> 지평선에서 뜬다';
+  else cap = '지구는 <b>서쪽 → 동쪽</b>으로 자전하므로<br>태양은 <b>동쪽 → 서쪽</b>으로 움직여 보인다';
+  return [g, cap];
+}
+document.getElementById('t02').addEventListener('input', e => { t02 = parseFloat(e.target.value); render(); });
+document.querySelectorAll('#ctrl-0-2 [data-t]').forEach(b => b.addEventListener('click', e => { e.currentTarget.blur(); setPlay('p02', false); t02 = +b.dataset.t; render(); }));
+
+/* ----- 장면 1 · 단계 ④ 자전 + 공전 ----- */
+let days03 = 0.5;
+const ORBIT_PER_DAY = 36;
+function draw03() {
+  const t = (days03 * 24) % 24;
+  const o = (days03 - 0.5) * ORBIT_PER_DAY;
+  const cx = 450, cy = 345, Ro = 168;
+  const [ex, ey] = P(cx, cy, Ro, o);
+  let g = defs('03a');
+  g += `<circle cx="${cx}" cy="${cy}" r="${Ro}" fill="none" stroke="#bbb" stroke-width="3" stroke-dasharray="10 9"/>`;
+  const [qa, qb] = P(cx, cy, Ro, 215), [qc, qd] = P(cx, cy, Ro, 240);
+  g += `<path d="M${r1(qa)},${r1(qb)} A${Ro},${Ro} 0 0 0 ${r1(qc)},${r1(qd)}" fill="none" stroke="#555" stroke-width="5" marker-end="url(#aw03a)"/>`;
+  const [gx, gy] = P(cx, cy, Ro + 34, 228);
+  g += `<text x="${r1(gx)}" y="${r1(gy)}" text-anchor="middle" font-size="26" fill="#555" font-weight="700">공전</text>`;
+  g += sunSVG(cx, cy, 38);
+  g += earthSVG('03a', ex, ey, 100, o + 180, t, { ck: 0.9, ps: 0.26, orbitFrac: 0.8 });
+  g += `<text x="20" y="44" font-size="28" font-weight="700">북극 위에서</text>`;
+  g += `<text x="20" y="80" font-size="28" font-weight="700">내려다본 공전</text>`;
+  g += `<text x="450" y="652" text-anchor="middle" class="note">공전은 실제보다 훨씬 빠르게 · 크기·거리 비율은 실제와 다름</text>`;
+  g += `<g transform="translate(900 0)">${defs('03b')}${skySVG('03b', t)}</g>`;
+  document.getElementById('t03v').textContent = `${Math.floor(days03 + 1e-6) + 1}일째 ${hhmm(t)}`;
+  return [g, '공전해도 태양을 <b>마주 보면 정오</b>, <b>등지면 자정</b><br>그래서 낮과 밤이 하루마다 되풀이된다'];
+}
+document.getElementById('day03').addEventListener('click', e => {
+  e.currentTarget.blur(); setPlay('p03', false);
+  const from = days03, to = Math.floor(days03 - 0.5 + 1e-6) + 1.5, t0 = performance.now();
+  (function anim(now) {
+    const k = Math.min(1, (now - t0) / 2500);
+    days03 = from + (to - from) * k; render();
+    if (k < 1) requestAnimationFrame(anim);
+  })(t0);
+});
+document.getElementById('reset03').addEventListener('click', e => { e.currentTarget.blur(); setPlay('p03', false); days03 = 0.5; render(); });
+
+/* ================================================================
+   장면 2 · 천구와 지평 좌표계
+   ================================================================ */
+
+/* ----- 장면 2 · 단계 ① 천구 ----- */
+let reveal10 = 0;
+// 천구 위의 별: 화면에서 서로 겹치지 않게 고름 (지평선 위, 앞쪽 면)
+const SKYSTARS = (() => {
+  const pr = mkProj(640, 330, 285, CAM_PSI, CAM_EPS);
+  const avoid = [pv(pr, hor(215, 20)), pv(pr, hor(40, 30)), pr(0, 0, 1), { x: 640, y: 280 }];
+  let x = 777; const rnd = () => (x = (x * 1103515245 + 12345) % 2147483648) / 2147483648; const a = [], pts = [];
+  for (let tries = 0; a.length < 8 && tries < 2000; tries++) {
+    const A = rnd() * 360, h = 15 + rnd() * 50, p = pv(pr, hor(A, h));
+    if (p.d < 0.05) continue;
+    if ([...pts, ...avoid].some(q => Math.hypot(q.x - p.x, q.y - p.y) < 85)) continue;
+    a.push([A, h]); pts.push(p);
+  }
+  return a;
+})();
+const CAP10 = [
+  '관측자를 중심으로 한 아주 큰 가상의 구 = <b>천구</b><br>별까지 거리는 달라도 모두 천구에 붙어 있는 것처럼 보인다',
+  '관측자가 선 평면을 넓히면 천구와 만나 <b>지평선</b>이 된다<br>지평선 위에 북·동·남·서점이 있다',
+  '머리 위 천구의 점 = <b>천정</b><br>발 아래 천구의 점 = <b>천저</b>'
+];
+document.getElementById('reset13').addEventListener('click', e => { e.currentTarget.blur(); tau14 = 0; render(); });
+function draw10() {
+  const cx = 640, cy = 330, R = 285, pr = mkProj(cx, cy, R, CAM_PSI, CAM_EPS);
+  let g = defs('10') + skyBack(pr, cx, cy, R);
+  // 거리가 다른 두 별: 천구 밖 실제 위치 → 관측자 시선 → 천구 표면에 비친 위치
+  const DEMO = [{ v: hor(215, 20), k: 1.3, name: '가까운 별' }, { v: hor(40, 30), k: 1.75, name: '먼 별' }];
+  for (const D of DEMO) {
+    const far = pv(pr, D.v, D.k);
+    g += `<line x1="${cx}" y1="${cy}" x2="${r1(far.x)}" y2="${r1(far.y)}" stroke="#7a8797" stroke-width="2.5" stroke-dasharray="8 7"/>`;
+  }
+  g += horizonFill(pr);
+  if (reveal10 >= 2) {
+    const mp = []; for (let t = 0; t <= 360; t += 3) mp.push(pv(pr, hor(0, t), 1));
+    g += curve(mp, 'stroke="#0066cc" stroke-width="3"', 'stroke="#0066cc" stroke-width="2" stroke-dasharray="7 7" opacity="0.5"');
+  }
+  // 천구 위의 별들
+  for (const [A, h] of SKYSTARS) { const p = pv(pr, hor(A, h)); g += starShape(p.x, p.y, p.d >= 0 ? 13 : 10, p.d >= 0 ? 1 : 0.45); }
+  g += personSide(cx, cy, 104);
+  if (reveal10 >= 2) {
+    const z = pr(0, 0, 1), nd = pr(0, 0, -1);
+    g += `<circle cx="${r1(z.x)}" cy="${r1(z.y)}" r="10" fill="#0066cc"/>`;
+    g += `<circle cx="${r1(nd.x)}" cy="${r1(nd.y)}" r="10" fill="#fff" stroke="#0066cc" stroke-width="4"/>`;
+    g += `<text x="${r1(z.x + 22)}" y="${r1(z.y - 10)}" font-size="38" font-weight="800" fill="#0066cc">천정</text><text x="${r1(z.x + 22)}" y="${r1(z.y + 26)}" font-size="26" fill="#333">머리 위</text>`;
+    g += `<text x="${r1(nd.x + 22)}" y="${r1(nd.y + 4)}" font-size="38" font-weight="800" fill="#0066cc">천저</text><text x="${r1(nd.x + 22)}" y="${r1(nd.y + 38)}" font-size="26" fill="#333">발 아래</text>`;
+  }
+  for (const D of DEMO) {
+    const far = pv(pr, D.v, D.k), on = pv(pr, D.v, 1);
+    g += starShape(far.x, far.y, 17, 0.6);
+    g += `<text x="${r1(far.x)}" y="${r1(far.y - 30)}" text-anchor="middle" font-size="28" font-weight="800" fill="#333" stroke="#fff" stroke-width="7" paint-order="stroke">${D.name}</text>`;
+    g += `<circle cx="${r1(on.x)}" cy="${r1(on.y)}" r="22" fill="#fff" stroke="#0066cc" stroke-width="4"/>`;
+    g += starShape(on.x, on.y, 15);
+  }
+  g += sphereOutline(cx, cy, R);
+  if (reveal10 >= 1) g += dirLabels(pr);
+  { const lp = pv(pr, hor(130, 0), 1.0);
+    g += `<text x="${r1(lp.x + 14)}" y="${r1(lp.y + 40)}" font-size="28" font-weight="700" fill="#333">지평선</text>`; }
+  if (reveal10 >= 2) { const lp = pv(pr, hor(0, 205), 1.0); g += `<text text-anchor="end" x="${r1(lp.x - 16)}" y="${r1(lp.y + 10)}" font-size="28" font-weight="700" fill="#0066cc" stroke="#fff" stroke-width="7" paint-order="stroke">자오선</text>`; }
+  g += `<text x="${cx + R * 0.72}" y="${cy - R * 0.78}" font-size="40" font-weight="800">천구</text>`;
+  g += `<text x="20" y="40" font-size="30" font-weight="700">관측자를 중심으로 한 천구</text>`;
+  // 오른쪽 설명
+  const bx = 1150;
+  g += `<g font-size="30">`;
+  g += `<text x="${bx}" y="200" font-weight="800">천구에서는</text>`;
+  g += `<text x="${bx}" y="250">· 별까지의 <tspan font-weight="800">거리는 생각하지 않고</tspan></text>`;
+  g += `<text x="${bx}" y="295">· 별이 보이는 <tspan font-weight="800" fill="#0066cc">방향</tspan>만 나타낸다</text>`;
+  g += `</g>`;
+  g += starShape(bx + 14, 372, 15, 0.6) + `<text x="${bx + 50}" y="383" font-size="28">실제 별의 위치 (거리가 서로 다름)</text>`;
+  g += `<circle cx="${bx + 14}" cy="432" r="22" fill="#fff" stroke="#0066cc" stroke-width="4"/>` + starShape(bx + 14, 432, 14) + `<text x="${bx + 50}" y="443" font-size="28">천구 표면에 비친 위치</text>`;
+  g += `<text x="${bx}" y="510" font-size="28" fill="#333">→ 실제 거리는 달라도 둘 다</text><text x="${bx}" y="550" font-size="28" fill="#333">　 천구에 붙어 있는 것처럼 보인다</text>`;
+  document.getElementById('next10').disabled = reveal10 >= 2;
+  return [g, CAP10[reveal10]];
+}
+document.getElementById('next10').addEventListener('click', e => { e.currentTarget.blur(); if (reveal10 < 2) { reveal10++; render(); } });
+document.getElementById('reset10').addEventListener('click', e => { e.currentTarget.blur(); reveal10 = 0; render(); });
+
+/* ----- 장면 2 · 단계 ② 자전과 별의 움직임 ----- */
+let th11 = 0, mode11 = 0;      // th11: 지구가 자전한 각(°)
+const RING = Array.from({ length: 14 }, (_, i) => [i * 360 / 14 + (i % 3) * 7, 0]);
+const NSKY = [[70, 20], [110, 75], [150, 130], [185, 200], [205, 260], [130, 320], [165, 30], [95, 240], [190, 100], [55, 170]];
+function globe(cx, cy, R, rot) {
+  // 지구본: 자전축이 위아래. 북극 위에서 볼 때 반시계 방향으로 회전.
+  const pr = mkProj(cx, cy, R, 0, 22);
+  const P3 = (lat, lon) => { const a = (lon + rot) * D2R, f = lat * D2R; return pr(Math.cos(f) * Math.cos(a), -Math.cos(f) * Math.sin(a), Math.sin(f)); };
+  let g = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="#dbe9f7"/>`;
+  for (let lon = 0; lon < 360; lon += 30) {
+    const pts = []; for (let lat = -90; lat <= 90; lat += 5) pts.push(P3(lat, lon));
+    g += curve(pts, `stroke="${lon === 0 ? '#0066cc' : '#8fa9c4'}" stroke-width="${lon === 0 ? 4 : 2}"`, null);
+  }
+  for (const lat of [-60, -30, 0, 30, 60]) {
+    const pts = []; for (let lon = 0; lon <= 360; lon += 5) pts.push(P3(lat, lon - rot));
+    g += curve(pts, `stroke="${lat === 0 ? '#555' : '#8fa9c4'}" stroke-width="${lat === 0 ? 3 : 2}"`, null);
+  }
+  g += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#111" stroke-width="3.5"/>`;
+  // 자전축
+  const np = pr(0, 0, 1), top = pr(0, 0, 1.45), sp = pr(0, 0, -1), bot = pr(0, 0, -1.3);
+  g += `<line x1="${r1(np.x)}" y1="${r1(np.y)}" x2="${r1(top.x)}" y2="${r1(top.y)}" stroke="#111" stroke-width="4"/>`;
+  g += `<line x1="${r1(sp.x)}" y1="${r1(sp.y)}" x2="${r1(bot.x)}" y2="${r1(bot.y)}" stroke="#111" stroke-width="4" stroke-dasharray="8 7"/>`;
+  g += `<circle cx="${r1(np.x)}" cy="${r1(np.y)}" r="7" fill="#111"/>`;
+  g += `<text x="${r1(top.x + 16)}" y="${r1(top.y + 10)}" font-size="28" font-weight="800">북극 (자전축)</text>`;
+  // 자전 방향 화살표: 북극 위의 원, 앞쪽에서 왼쪽 → 오른쪽 (위에서 보면 반시계)
+  const pts = []; for (let a = 205; a <= 335; a += 5) { const t = a * D2R; pts.push(pr(0.5 * Math.cos(t), -0.5 * Math.sin(t), 1.22)); }
+  g += curve(pts, 'stroke="#0066cc" stroke-width="6"', 'stroke="#0066cc" stroke-width="6"');
+  g += headAt(pts[pts.length - 2], pts[pts.length - 1], 22, '#0066cc');
+  // 우리나라 위치 표시 (북위 37.5°)
+  const k = P3(LAT, 0);
+  if (k.d > 0) g += `<circle cx="${r1(k.x)}" cy="${r1(k.y)}" r="9" fill="#ffe9a8" stroke="#111" stroke-width="3"/>`;
+  return g;
+}
+function topDisk(cx, cy, R, rot) {
+  let g = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="#dbe9f7"/>`;
+  for (let i = 0; i < 12; i++) { const [x, y] = P(cx, cy, R, rot + i * 30); g += `<line x1="${cx}" y1="${cy}" x2="${r1(x)}" y2="${r1(y)}" stroke="${i === 0 ? '#0066cc' : '#8fa9c4'}" stroke-width="${i === 0 ? 4 : 2}"/>`; }
+  g += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#111" stroke-width="3.5"/><circle cx="${cx}" cy="${cy}" r="6" fill="#111"/>`;
+  return g;
+}
+function arcArrow(cx, cy, r, a1, a2, color, w, id) {   // a2 > a1 이면 반시계, a2 < a1 이면 시계
+  const [x1, y1] = P(cx, cy, r, a1), [x2, y2] = P(cx, cy, r, a2);
+  const sweep = a2 > a1 ? 0 : 1, large = Math.abs(a2 - a1) > 180 ? 1 : 0;
+  return `<path d="M${r1(x1)},${r1(y1)} A${r},${r} 0 ${large} ${sweep} ${r1(x2)},${r1(y2)}" fill="none" stroke="${color}" stroke-width="${w}" marker-end="url(#${id})"/>`;
+}
+const CAP11 = [
+  '지구 밖(북극 위)에서 내려다보면<br>지구는 <b>시계 반대 방향</b>으로 자전한다',
+  '지구와 함께 돌면서 보면<br>별들은 반대로 <b>시계 방향</b>으로 도는 것처럼 보인다',
+  '그런데 지구 안에서 북쪽 하늘을 <b>올려다보면</b> 방향이 뒤집혀<br>별은 북극성을 중심으로 <b>시계 반대 방향</b>으로 돈다'
+];
+function draw11() {
+  let g = defs('11');
+  g += `<text x="20" y="40" font-size="30" font-weight="700">지구 밖에서 본 지구의 자전</text>`;
+  g += globe(420, 360, 215, th11);
+  g += `<text x="420" y="652" text-anchor="middle" class="note">파란 경선이 도는 방향을 보세요 · 노란 점 = 우리나라</text>`;
+  g += `<line x1="880" y1="30" x2="880" y2="630" stroke="#e2e2e2" stroke-width="3"/>`;
+  const cx = 1340, cy = 345;
+  if (mode11 === 0 || mode11 === 1) {
+    const rotE = mode11 === 0 ? th11 : 0, rotS = mode11 === 0 ? 0 : -th11;
+    g += `<text x="920" y="40" font-size="30" font-weight="700">${mode11 === 0 ? '북극 위에서 내려다본 지구와 별' : '지구와 함께 돌며 본 별'}</text>`;
+    g += `<circle cx="${cx}" cy="${cy}" r="255" fill="none" stroke="#c4c4c4" stroke-width="3" stroke-dasharray="10 9"/>`;
+    g += `<text x="${cx + 205}" y="${cy + 240}" font-size="26" fill="#555">천구</text>`;
+    for (const [a] of RING) { const [x, y] = P(cx, cy, 255, a + rotS); g += starShape(x, y, 14); }
+    g += topDisk(cx, cy, 130, rotE + 90);
+    if (mode11 === 0) {
+      g += arcArrow(cx, cy, 165, 200, 320, '#111', 6, 'ar11');
+      g += `<text x="${cx + 250}" y="${cy - 268}" text-anchor="middle" font-size="30" font-weight="800">지구: 시계 반대 방향</text>`;
+    } else {
+      g += arcArrow(cx, cy, 300, 120, 60, '#0066cc', 7, 'ab11');
+      g += `<text x="${cx + 250}" y="${cy - 268}" text-anchor="middle" font-size="30" font-weight="800" fill="#0066cc" stroke="#fff" stroke-width="7" paint-order="stroke">별: 시계 방향</text>`;
+      g += `<text x="${cx + 250}" y="${cy - 230}" text-anchor="middle" font-size="26" font-weight="700" fill="#0066cc" stroke="#fff" stroke-width="7" paint-order="stroke">(동 → 서)</text>`;
+      g += `<text x="${cx}" y="${cy + 178}" text-anchor="middle" font-size="26" fill="#555">지구를 멈춰 놓고 본 모습</text>`;
+    }
+  } else {
+    // 지구 안에서 북쪽 하늘을 올려다본 모습: 북극성을 중심으로 반시계
+    g += `<g transform="translate(900 0)">`;
+    g += `<rect x="0" y="0" width="900" height="560" fill="#1e2532"/>`;
+    g += `<text x="20" y="40" font-size="30" font-weight="700" fill="#fff">지구 안에서 북쪽 하늘을 올려다보면</text>`;
+    const px = 450, py = 300;
+    for (const [r, b] of NSKY) {
+      const a = b + th11;
+      g += arcArrow(px, py, r, a - 45, a, 'rgba(120,180,255,0.9)', 4, 'ab11');
+      const [x, y] = P(px, py, r, a); g += starShape(x, y, 12);
+    }
+    g += starShape(px, py, 18);
+    g += `<text x="${px + 26}" y="${py - 14}" font-size="28" font-weight="800" fill="#fff">북극성</text>`;
+    g += `<rect x="0" y="560" width="900" height="100" fill="#e9e9e9"/><line x1="0" y1="560" x2="900" y2="560" stroke="#111" stroke-width="4"/>`;
+    for (const [x, a, b] of [[90, '서', '(왼손 쪽)'], [450, '북', '(앞)'], [810, '동', '(오른손 쪽)']]) {
+      g += `<text x="${x}" y="608" text-anchor="middle" font-size="40" font-weight="800">${a}</text>`;
+      g += `<text x="${x}" y="645" text-anchor="middle" font-size="24" fill="#444">${b}</text>`;
+    }
+    g += `<text x="880" y="40" text-anchor="end" font-size="30" font-weight="800" fill="#8ec5ff">시계 반대 방향 ↺</text>`;
+    g += `</g>`;
+  }
+  document.querySelectorAll('#ctrl-1-1 [data-m]').forEach(b => b.classList.toggle('sel', +b.dataset.m === mode11));
+  return [g, CAP11[mode11]];
+}
+document.querySelectorAll('#ctrl-1-1 [data-m]').forEach(b => b.addEventListener('click', e => { e.currentTarget.blur(); mode11 = +b.dataset.m; render(); }));
+
+/* ----- 장면 2 · 단계 ③ 일주 운동 ----- */
+let tau12 = 0, trail12 = true;   // tau12: 흐른 시간(시)
+const DSTARS = [[-25, -75], [0, -40], [15, 15], [35, 70], [55, -150], [72, 40], [89.2, 0]];
+function draw12() {
+  const cx = 640, cy = 330, R = 290, pr = mkProj(cx, cy, R, CAM_PSI, CAM_EPS);
+  let g = defs('12') + skyBack(pr, cx, cy, R);
+  // 천구의 북극과 축
+  const pole = { n: Math.cos(LAT * D2R), e: 0, u: Math.sin(LAT * D2R) };
+  const pN = pv(pr, pole, 1), pNo = pv(pr, pole, 1.18), pS = pv(pr, pole, -1);
+  g += `<line x1="${r1(pS.x)}" y1="${r1(pS.y)}" x2="${cx}" y2="${cy}" stroke="#555" stroke-width="2.5" stroke-dasharray="8 7"/>`;
+  // 일주권 (뒤쪽)
+  const circ = dec => { const a = []; for (let H = 0; H <= 360; H += 5) a.push(pv(pr, eqToHor(dec, H, LAT))); return a; };
+  for (const [dec] of DSTARS) if (dec < 89) g += curve(circ(dec), null, 'stroke="#aab3bd" stroke-width="2" stroke-dasharray="6 7"');
+  g += horizonFill(pr);
+  for (const [dec] of DSTARS) if (dec < 89) g += curve(circ(dec), 'stroke="#9aa5b1" stroke-width="2.5"', null);
+  // 자취
+  if (trail12) for (const [dec, H0] of DSTARS) {
+    if (dec > 89) continue;
+    const H = H0 + tau12 * 15, a = [];
+    for (let h = Math.max(H0, H - 75); h <= H + 0.01; h += 2.5) a.push(pv(pr, eqToHor(dec, h, LAT)));
+    if (a.length > 1) g += curve(a, 'stroke="#0066cc" stroke-width="5" stroke-linecap="round"', 'stroke="#0066cc" stroke-width="3" stroke-dasharray="6 6" opacity="0.6"');
+  }
+  g += `<line x1="${cx}" y1="${cy}" x2="${r1(pNo.x)}" y2="${r1(pNo.y)}" stroke="#555" stroke-width="3"/>`;
+  // 별
+  for (const [dec, H0] of DSTARS) {
+    const v = eqToHor(dec, H0 + tau12 * 15, LAT), p = pv(pr, v);
+    const op = v.u < 0 ? 0.25 : (p.d < 0 ? 0.55 : 1);
+    g += starShape(p.x, p.y, dec > 89 ? 16 : 15, op);
+  }
+  g += `<text x="${r1(pN.x + 22)}" y="${r1(pN.y - 12)}" font-size="26" font-weight="700" fill="#333" stroke="#fff" stroke-width="6" paint-order="stroke">북극성</text>`;
+  g += `<text x="${r1(pNo.x + 12)}" y="${r1(pNo.y - 6)}" font-size="26" font-weight="700" fill="#555">천구의 북극</text>`;
+  // 동 → 서 방향 큰 화살표 (남쪽 하늘, 천구 바깥)
+  const arr = []; for (let H = -78; H <= -18; H += 3) arr.push(pv(pr, eqToHor(0, H, LAT), 0.86));
+  g += `<path d="M${arr.map(p => r1(p.x) + ',' + r1(p.y)).join(' L')}" fill="none" stroke="#0066cc" stroke-width="9" stroke-linecap="round"/>`;
+  g += headAt(arr[arr.length - 2], arr[arr.length - 1], 32, '#0066cc');
+  g += personSide(cx, cy, 80);
+  const z = pr(0, 0, 1);
+  g += `<circle cx="${r1(z.x)}" cy="${r1(z.y)}" r="7" fill="#111"/><text x="${r1(z.x + 14)}" y="${r1(z.y - 10)}" font-size="28" font-weight="700">천정</text>`;
+  g += sphereOutline(cx, cy, R) + dirLabels(pr);
+  g += `<text x="20" y="40" font-size="30" font-weight="700">북반구 중위도(북위 37.5°) 관측자의 천구</text>`;
+  // 오른쪽 설명
+  const bx = 1180;
+  g += `<text x="${bx}" y="190" font-size="30" font-weight="800">일주 운동</text>`;
+  g += `<text x="${bx}" y="238" font-size="28">· 천구의 북극을 축으로 하루에 한 바퀴</text>`;
+  g += `<text x="${bx}" y="282" font-size="28">· 1시간에 <tspan font-weight="800">15°</tspan>씩</text>`;
+  g += `<text x="${bx}" y="326" font-size="28">· 동쪽에서 떠서 남쪽을 지나 서쪽으로</text>`;
+  g += `<line x1="${bx}" y1="390" x2="${bx + 60}" y2="390" stroke="#0066cc" stroke-width="5"/><text x="${bx + 74}" y="399" font-size="26">지나온 자취</text>`;
+  g += `<line x1="${bx}" y1="436" x2="${bx + 60}" y2="436" stroke="#9aa5b1" stroke-width="2.5"/><text x="${bx + 74}" y="445" font-size="26">별이 도는 길 (일주권)</text>`;
+  g += starShape(bx + 30, 482, 13, 0.25) + `<text x="${bx + 74}" y="491" font-size="26">흐린 별 = 지평선 아래</text>`;
+  g += `<line x1="${bx}" y1="540" x2="${bx + 48}" y2="540" stroke="#0066cc" stroke-width="9" stroke-linecap="round"/>` + headAt({ x: bx, y: 540 }, { x: bx + 64, y: 540 }, 24, '#0066cc') + `<text x="${bx + 74}" y="549" font-size="26" font-weight="700" fill="#0066cc">일주 운동 방향 (동 → 서)</text>`;
+  const hrs = tau12 % 24;
+  document.getElementById('trail12').textContent = trail12 ? '자취 끄기' : '자취 켜기';
+  return [g, '지구가 자전하므로 별은 천구의 북극을 축으로 돈다<br><b>동쪽에서 떠서 남쪽 하늘을 지나 서쪽으로</b> 진다 = 일주 운동'];
+}
+document.getElementById('trail12').addEventListener('click', e => { e.currentTarget.blur(); trail12 = !trail12; render(); });
+
+/* ----- 장면 2 · 단계 ④ 방향별 일주 운동 ----- */
+// 관측자가 한 방향을 바라본 하늘 (사진기처럼 원근 투영). 별의 자취는 시간이 흐를수록 길어짐.
+let view14 = 90, tau14 = 0;
+const FIELD = (() => { let x = 4242; const rnd = () => (x = (x * 1103515245 + 12345) % 2147483648) / 2147483648; const a = [];
+  while (a.length < 170) { const dec = Math.asin(rnd() * 2 - 1) / D2R; if (dec < -55) continue; a.push([dec, rnd() * 360, rnd()]); }
+  a.push([89.2, 0, 1]);   // 북극성
+  return a; })();
+const VIEWNAME = { 0: '북쪽', 90: '동쪽', 180: '남쪽', 270: '서쪽' };
+const SIDES = { 0: ['서', '북', '동'], 90: ['북', '동', '남'], 180: ['동', '남', '서'], 270: ['남', '서', '북'] };
+const CAP14 = {
+  90: '<b>동쪽 하늘</b>: 별이 지평선에서 떠서<br>오른쪽(남쪽) 위로 비스듬히 올라간다',
+  180: '<b>남쪽 하늘</b>: 별이 왼쪽(동)에서 오른쪽(서)으로<br>지평선과 나란한 호를 그리며 움직인다',
+  270: '<b>서쪽 하늘</b>: 별이 오른쪽(북쪽) 아래로<br>비스듬히 내려가 지평선으로 진다',
+  0: '<b>북쪽 하늘</b>: 별이 북극성을 중심으로<br><b>시계 반대 방향</b>으로 원을 그린다'
+};
+function draw14() {
+  const W = 1800, Hh = 560, A0 = view14, e0 = A0 === 0 ? 30 : 25, F = 520;
+  const fw = hor(A0, e0), rt = hor(A0 + 90, 0);
+  const up = { n: -Math.sin(e0 * D2R) * Math.cos(A0 * D2R), e: -Math.sin(e0 * D2R) * Math.sin(A0 * D2R), u: Math.cos(e0 * D2R) };
+  const yH = Hh - 10, cy0 = yH - F * Math.tan(e0 * D2R), cx0 = W / 2;
+  const dot = (a, b) => a.n * b.n + a.e * b.e + a.u * b.u;
+  const cam = v => { const Z = dot(v, fw); if (Z < 0.15) return null; return { x: cx0 + F * dot(v, rt) / Z, y: cy0 - F * dot(v, up) / Z }; };
+  let g = defs('14') + `<clipPath id="clip14"><rect x="0" y="0" width="${W}" height="${yH}"/></clipPath>`;
+  g += `<rect x="0" y="0" width="${W}" height="${yH}" fill="#1e2532"/>`;
+  g += `<g clip-path="url(#clip14)">`;
+  const L = Math.min(tau14 * 15, 80);   // 자취 길이(°)
+  FIELD.forEach(([dec, H0, b], i) => {
+    const H = H0 + tau14 * 15;
+    // 자취
+    if (L > 0.5) {
+      let seg = [], out = '';
+      const flush = () => { if (seg.length > 1) out += `<path d="M${seg.map(p => r1(p.x) + ',' + r1(p.y)).join(' L')}" fill="none" stroke="rgba(170,205,255,${0.45 + b * 0.5})" stroke-width="${1.6 + b * 1.6}" stroke-linecap="round"/>`; seg = []; };
+      for (let h = H - L; h <= H + 0.01; h += 1.5) {
+        const v = eqToHor(dec, h, LAT), p = v.u > -0.02 ? cam(v) : null;
+        if (p && Math.abs(p.x - cx0) < 1300 && p.y > -300) seg.push(p); else flush();
+      }
+      flush(); g += out;
+    }
+    const v = eqToHor(dec, H, LAT), p = v.u > 0 ? cam(v) : null;
+    if (p && p.x > -20 && p.x < W + 20 && p.y > -20) {
+      if (dec > 89) { g += starShape(p.x, p.y, 15); g += `<text x="${r1(p.x + 22)}" y="${r1(p.y - 12)}" font-size="28" font-weight="800" fill="#fff">북극성</text>`; }
+      else g += `<circle cx="${r1(p.x)}" cy="${r1(p.y)}" r="${1.8 + b * 2.2}" fill="#fff"/>`;
+    }
+  });
+  g += `</g>`;
+  // 방향 화살표: 몇몇 밝은 별의 지금 움직임
+  if (L > 3) FIELD.forEach(([dec, H0, b], i) => {
+    if (b < 0.8 || dec > 89) return;
+    const H = H0 + tau14 * 15, v1 = eqToHor(dec, H - 3, LAT), v2 = eqToHor(dec, H, LAT);
+    if (v1.u < 0.03 || v2.u < 0.03) return;
+    const p1 = cam(v1), p2 = cam(v2);
+    if (!p1 || !p2 || p2.x < 20 || p2.x > W - 20 || p2.y < 20) return;
+    const d = Math.hypot(p2.x - p1.x, p2.y - p1.y) || 1, q = { x: p2.x + (p2.x - p1.x) / d * 16, y: p2.y + (p2.y - p1.y) / d * 16 };
+    g += headAt(p2, q, 16, '#8ec5ff');
+  });
+  // 땅과 방위
+  g += `<rect x="0" y="${yH}" width="${W}" height="${660 - yH}" fill="#e9e9e9"/><line x1="0" y1="${yH}" x2="${W}" y2="${yH}" stroke="#111" stroke-width="4"/>`;
+  const [lft, mid, rgt] = SIDES[A0];
+  g += `<text x="60" y="${yH + 64}" font-size="40" font-weight="800">◀ ${lft}</text>`;
+  g += `<text x="${W / 2}" y="${yH + 64}" text-anchor="middle" font-size="44" font-weight="800" fill="#0066cc">${mid}</text>`;
+  g += `<text x="${W - 60}" y="${yH + 64}" text-anchor="end" font-size="40" font-weight="800">${rgt} ▶</text>`;
+  g += `<rect x="0" y="0" width="420" height="60" fill="#1e2532" opacity="0.85"/><text x="20" y="40" font-size="30" font-weight="700" fill="#fff">관측자가 ${VIEWNAME[A0]} 하늘을 바라보면</text>`;
+  document.querySelectorAll('#ctrl-1-3 [data-v]').forEach(b => b.classList.toggle('sel', +b.dataset.v === A0));
+  return [g, CAP14[A0]];
+}
+document.querySelectorAll('#ctrl-1-3 [data-v]').forEach(b => b.addEventListener('click', e => { e.currentTarget.blur(); view14 = +b.dataset.v; tau14 = 0; setPlay('p13', true); render(); }));
+
+/* ----- 장면 2 · 단계 ⑤ 지평 좌표계 ----- */
+let az13 = 210, alt13 = 40, lastMoved13 = '';
+function draw13() {
+  const cx = 640, cy = 330, R = 290, pr = mkProj(cx, cy, R, CAM_PSI, CAM_EPS);
+  const A = az13, h = alt13;
+  let g = defs('13') + skyBack(pr, cx, cy, R);
+  // 수직권 (방위각 A의 지평점 → 천정 → 반대편)
+  const vc = []; for (let t = 0; t <= 180; t += 3) { const c = Math.cos(t * D2R), s = Math.sin(t * D2R); const b = hor(A, 0); vc.push(pr(b.n * c, b.e * c, s)); }
+  g += curve(vc, null, 'stroke="#9aa5b1" stroke-width="2.5" stroke-dasharray="8 7"');
+  g += horizonFill(pr);
+  g += curve(vc, 'stroke="#9aa5b1" stroke-width="3"', null);
+  // 방위각 호: 북점에서 시계 방향(북 → 동 → 남 → 서)
+  if (A > 0) {
+    const az = []; for (let a = 0; a <= A + 0.01; a += Math.max(1, A / 60)) az.push(pv(pr, hor(a, 0)));
+    az.push(pv(pr, hor(A, 0)));
+    g += curve(az, 'stroke="#0066cc" stroke-width="9" stroke-linecap="round"', 'stroke="#0066cc" stroke-width="6" stroke-dasharray="10 8"');
+    if (A > 6) g += headAt(az[az.length - 3], az[az.length - 1], 26, '#0066cc');
+  }
+  // 고도 호: 지평선에서 수직권을 따라 별까지
+  const foot = pv(pr, hor(A, 0));
+  if (h > 0) {
+    const al = []; for (let b = 0; b <= h + 0.01; b += Math.max(1, h / 40)) al.push(pv(pr, hor(A, b)));
+    al.push(pv(pr, hor(A, h)));
+    g += curve(al, 'stroke="#0066cc" stroke-width="9" stroke-linecap="round"', 'stroke="#0066cc" stroke-width="6" stroke-dasharray="10 8"');
+  }
+  g += `<circle cx="${r1(foot.x)}" cy="${r1(foot.y)}" r="8" fill="#0066cc" stroke="#fff" stroke-width="3"/>`;
+  // 별과 관측자의 시선
+  const sv = hor(A, h), sp = pv(pr, sv);
+  // 고도: 관측자의 발(천구 중심)에서 지평선 쪽 선과 별 쪽 선 사이의 각
+  g += `<line x1="${cx}" y1="${cy}" x2="${r1(foot.x)}" y2="${r1(foot.y)}" stroke="#555" stroke-width="3" stroke-dasharray="7 6"/>`;
+  g += `<line x1="${cx}" y1="${cy}" x2="${r1(sp.x)}" y2="${r1(sp.y)}" stroke="#555" stroke-width="3" stroke-dasharray="7 6"/>`;
+  if (h > 0) { const sa = []; for (let b = 0; b <= h + 0.01; b += Math.max(1, h / 30)) sa.push(pv(pr, hor(A, b), 0.2)); sa.push(pv(pr, hor(A, h), 0.2));
+    g += `<path d="M${sa.map(p => r1(p.x) + ',' + r1(p.y)).join(' L')}" fill="none" stroke="#0066cc" stroke-width="4"/>`; }
+  g += personSide(cx, cy, 80);
+  g += starShape(sp.x, sp.y, 22, sp.d >= 0 ? 1 : 0.6);
+  // 천정
+  const z = pr(0, 0, 1);
+  g += `<circle cx="${r1(z.x)}" cy="${r1(z.y)}" r="7" fill="#111"/><text x="${r1(z.x + 14)}" y="${r1(z.y - 10)}" font-size="28" font-weight="700">천정</text>`;
+  g += sphereOutline(cx, cy, R) + dirLabels(pr);
+  // 값 글자 (호 가운데)
+  if (A > 8) {
+    const mid = pv(pr, hor(A / 2, 0), 0.82);
+    g += `<text x="${r1(mid.x)}" y="${r1(mid.y + 12)}" text-anchor="middle" font-size="32" font-weight="800" fill="#0066cc" stroke="#fff" stroke-width="7" paint-order="stroke">A = ${A}°</text>`;
+  }
+  if (h > 8) {
+    const mid = pv(pr, hor(A, h / 2)), lx = mid.x + (cx - mid.x) * 0.22, ly = mid.y + (cy - mid.y) * 0.22;
+    g += `<text x="${r1(lx)}" y="${r1(ly + 10)}" text-anchor="middle" font-size="32" font-weight="800" fill="#0066cc" stroke="#fff" stroke-width="7" paint-order="stroke">h = ${h}°</text>`;
+  }
+  g += `<text x="20" y="40" font-size="30" font-weight="700">지평 좌표계: 별의 위치를 방위각과 고도로</text>`;
+  // 오른쪽 값 표시
+  const bx = 1180;
+  g += `<rect x="${bx - 20}" y="150" width="560" height="200" rx="18" fill="#f3f7fc" stroke="${lastMoved13 ? '#0066cc' : '#cfd8e3'}" stroke-width="3"/>`;
+  g += `<text x="${bx + 10}" y="225" font-size="44" font-weight="800" fill="${lastMoved13 === 'az' ? '#0066cc' : '#111'}">방위각 A = ${A}°</text>`;
+  g += `<text x="${bx + 10}" y="305" font-size="44" font-weight="800" fill="${lastMoved13 === 'alt' ? '#0066cc' : '#111'}">고도 h = ${h}°</text>`;
+  g += `<text x="${bx}" y="410" font-size="27" fill="#333">방위각: 북 0° → 동 90° → 남 180° → 서 270°</text>`;
+  g += `<text x="${bx}" y="452" font-size="27" fill="#333">고도: 지평선 0° → 천정 90°</text>`;
+  g += `<line x1="${bx}" y1="502" x2="${bx + 60}" y2="502" stroke="#9aa5b1" stroke-width="3"/><text x="${bx + 74}" y="511" font-size="26">수직권 (천정과 별을 지나는 원)</text>`;
+  document.getElementById('az13').value = A; document.getElementById('az13v').textContent = A + '°';
+  document.getElementById('alt13').value = h; document.getElementById('alt13v').textContent = h + '°';
+  const cap = lastMoved13 === 'az'
+    ? '<b>방위각</b>이 바뀌면 별은 같은 고도에서 <b>지평선과 나란히</b> 돈다<br>방위각: 북점에서 시계 방향으로 지평선을 따라 잰 각'
+    : lastMoved13 === 'alt'
+      ? '<b>고도</b>가 바뀌면 방위각은 그대로, 별은 <b>수직권을 따라</b> 오르내린다<br>고도: 지평선에서 수직권을 따라 별까지 잰 각'
+      : '<b>방위각 A</b>: 북점에서 시계 방향으로 지평선을 따라 잰 각 (0°~360°)<br><b>고도 h</b>: 지평선에서 수직권을 따라 별까지 잰 각 (0°~90°)';
+  return [g, cap];
+}
+document.getElementById('az13').addEventListener('input', e => { az13 = +e.target.value; lastMoved13 = 'az'; render(); });
+document.getElementById('alt13').addEventListener('input', e => { alt13 = +e.target.value; lastMoved13 = 'alt'; render(); });
+
+/* ================================================================
+   장면·단계 전환
+   ================================================================ */
+const SCENES = [
+  { name: '장면 1', steps: ['① 방위 보기', '② 우주에서 본 방위', '③ 자전', '④ 자전 + 공전'], draw: [draw00, draw01, draw02, draw03], smallCap: [] },
+  { name: '장면 2', steps: ['① 천구', '② 자전과 별의 움직임', '③ 일주 운동', '④ 방향별 일주 운동', '⑤ 지평 좌표계'], draw: [draw10, draw11, draw12, draw14, draw13], smallCap: [1, 4] },
+];
+let sc = 0, st = 0;
+const playing = { p02: false, p03: false, p11: false, p12: false, p13: false };
+function setPlay(k, v) {
+  playing[k] = v;
+  document.querySelectorAll(`.play[data-k="${k}"]`).forEach(b => b.textContent = v ? '⏸ 멈춤' : '▶ 재생');
+}
+document.querySelectorAll('.play').forEach(b => b.addEventListener('click', e => {
+  e.currentTarget.blur(); const k = b.dataset.k; setPlay(k, !playing[k]);
+  if (k === 'p02' && playing[k] && t02 >= 24) t02 = 0;
+}));
+function render() {
+  const [g, cap] = SCENES[sc].draw[st]();
+  document.getElementById('fig').innerHTML = g;
+  const c = document.getElementById('cap');
+  c.innerHTML = cap; c.classList.toggle('small', SCENES[sc].smallCap.includes(st));
+}
+function go(s, t) {
+  sc = s; st = t;
+  for (const k in playing) setPlay(k, false);
+  if (sc === 1 && st === 1) setPlay('p11', true);       // 들어오면 바로 재생
+  if (sc === 1 && st === 2) setPlay('p12', true);
+  if (sc === 1 && st === 3) setPlay('p13', true);
+  document.querySelectorAll('.ctrl').forEach(c => c.classList.toggle('on', c.id === `ctrl-${sc}-${st}`));
+  const box = document.getElementById('steps');
+  box.innerHTML = SCENES[sc].steps.map((n, k) => `<button data-s="${k}" class="${k === st ? 'on' : (k < st ? 'done' : '')}">${n}</button>`).join('');
+  box.querySelectorAll('button').forEach(b => b.addEventListener('click', e => { e.currentTarget.blur(); go(sc, +b.dataset.s); }));
+  document.getElementById('counter').textContent = `${SCENES[sc].name} · 단계 ${st + 1} / ${SCENES[sc].steps.length}`;
+  const sbox = document.getElementById('scenes');
+  sbox.innerHTML = SCENES.map((S, k) => `<button data-c="${k}" class="${k === sc ? 'on' : ''}">${S.name}</button>`).join('');
+  sbox.querySelectorAll('button').forEach(b => b.addEventListener('click', e => { e.currentTarget.blur(); go(+b.dataset.c, 0); }));
+  document.getElementById('stepPrev').disabled = sc === 0 && st === 0;
+  document.getElementById('stepNext').disabled = sc === SCENES.length - 1 && st === SCENES[sc].steps.length - 1;
+  document.getElementById('scenePrev').disabled = sc === 0;
+  document.getElementById('sceneNext').disabled = sc === SCENES.length - 1;
+  render();
+}
+function next() {
+  if (sc === 0 && st === 1 && reveal01 < 3) { reveal01++; render(); return; }
+  if (sc === 1 && st === 0 && reveal10 < 2) { reveal10++; render(); return; }
+  if (sc === 1 && st === 1 && mode11 < 1) { mode11++; render(); return; }
+  if (st < SCENES[sc].steps.length - 1) go(sc, st + 1);
+  else if (sc < SCENES.length - 1) go(sc + 1, 0);
+}
+function prev() {
+  if (st > 0) go(sc, st - 1);
+  else if (sc > 0) go(sc - 1, SCENES[sc - 1].steps.length - 1);
+}
+document.addEventListener('keydown', e => {
+  const inRange = e.target.tagName === 'INPUT';
+  if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && inRange) return;
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); if (inRange) e.target.blur(); next(); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prev(); }
+  else if (e.key === 'f' || e.key === 'F') {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+    else document.exitFullscreen?.();
+  }
+});
+
+document.getElementById('stepPrev').addEventListener('click', e => { e.currentTarget.blur(); prev(); });
+document.getElementById('stepNext').addEventListener('click', e => { e.currentTarget.blur(); next(); });
+document.getElementById('scenePrev').addEventListener('click', e => { e.currentTarget.blur(); if (sc > 0) go(sc - 1, 0); });
+document.getElementById('sceneNext').addEventListener('click', e => { e.currentTarget.blur(); if (sc < SCENES.length - 1) go(sc + 1, 0); });
+
+/* 움직임 (하나의 반복 루프) */
+let lastT = performance.now();
+function frame(now) {
+  const dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
+  let ch = false;
+  if (sc === 0 && st === 2 && playing.p02) { t02 = (t02 + dt * 2) % 24; ch = true; }            // 하루 = 12초
+  if (sc === 0 && st === 3 && playing.p03) { days03 += dt / 6; if (days03 > 10.5) days03 -= 10; ch = true; }
+  if (sc === 1 && st === 1 && playing.p11) { th11 = (th11 + dt * 30) % 360; ch = true; }        // 12초에 한 바퀴
+  if (sc === 1 && st === 3 && playing.p13) { tau14 += dt * 0.6; if (tau14 > 12) tau14 = 0; ch = true; }      // 1초에 9°
+  if (sc === 1 && st === 2 && playing.p12) { tau12 += dt * 1.5; if (tau12 > 24) tau12 -= 24; ch = true; } // 하루 = 16초
+  if (ch) render();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// 주소 끝에 #2 를 붙이면 장면 2부터 시작
+go(location.hash === '#2' ? 1 : 0, 0);
+</script>
+</body>
+</html>
